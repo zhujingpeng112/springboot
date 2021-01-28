@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "user")
 public class User {
 
+
     private Integer id;
 
     private String userName;
@@ -25,4 +26,5 @@ public class User {
         this.userName = userName;
         this.age = age;
     }
+
 }
