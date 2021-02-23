@@ -22,7 +22,7 @@ public class ShowController {
 
     @RequestMapping("/show")
     public String show(Model model){
-        model.addAttribute("msg","早上好！！！！");
+        model.addAttribute("msg","早上好！！！！   1111");
         return "show1";
     }
 

@@ -664,9 +664,49 @@ public class User {
 </html>
 ```
 
+### 6.SpringBoot实现热部署
 
+##### 1.修改setting
 
+![idea热部署设置](image\idea热部署设置1.png)
 
+##### 2.ctrl+shift+alt+/
 
+![idea热部署设置](image\idea热部署设置2.png)
 
+勾选
 
+![idea热部署设置](image\idea热部署设置3.png)
+
+##### 3.添加spring-boot-devtools
+
+```xml
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+        </dependency>
+```
+
+##### 4.修改build节点
+
+```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <fork>true</fork>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+```
+
+### 7.SpringBoot异常处理
+
+#### 7.1 自定义错误页面
+
+SpringBoot默认的处理异常机制：SpringBoot默认的已经提供了一套处理机制。一旦程序中出现异常SpringBoot会向/error的url发出请求。在SpringBoot中提供了一个叫BasicExeceptionController来处理/error请求，然后跳转默认显示异常的页面来展示异常信息。
+
+#### 7.2 @
