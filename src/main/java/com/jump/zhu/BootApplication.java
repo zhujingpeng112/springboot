@@ -11,6 +11,9 @@ import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
+
+import java.util.Properties;
 
 @SpringBootApplication
 @ServletComponentScan
@@ -33,6 +36,19 @@ public class BootApplication {
         filterRegistrationBean.addUrlPatterns("/second");
         return filterRegistrationBean;
     }
+
+    @Bean
+    public SimpleMappingExceptionResolver getSimpleMappingExceptionResolver(){
+        SimpleMappingExceptionResolver mapping = new SimpleMappingExceptionResolver();
+        Properties mappings = new Properties();
+        //java.lang.ArithmeticException
+        System.out.println("SimpleMappingExceptionResolver");
+        mappings.setProperty("java.lang.NullPointerException","error2");
+        mapping.setExceptionMappings(mappings);
+        return mapping;
+
+    }
+
 
 
 }

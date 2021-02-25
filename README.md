@@ -705,8 +705,128 @@ public class User {
 
 ### 7.SpringBoot异常处理
 
-#### 7.1 自定义错误页面
+#### 7.1 默认错误页面
 
 SpringBoot默认的处理异常机制：SpringBoot默认的已经提供了一套处理机制。一旦程序中出现异常SpringBoot会向/error的url发出请求。在SpringBoot中提供了一个叫BasicExeceptionController来处理/error请求，然后跳转默认显示异常的页面来展示异常信息。
 
-#### 7.2 @
+
+
+#### 7.2 局部异常              
+
+##### @ExceptionHandler注解       
+
+优先级  1
+
+ ```java
+    @ExceptionHandler(value = {NullPointerException.class})
+    public ModelAndView nullPointerExceptionHandler(Exception e){
+        ModelAndView view = new ModelAndView();
+        view.addObject("error",e.toString());
+        view.setViewName("error1");
+        return view;
+    }
+ ```
+
+#### 7.3 全局异常
+
+##### 7.3.1 @ControllerAdvice注解+@ExceptionHandler注解
+
+优先级  2
+
+```java
+package com.jump.zhu.handler;
+
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.ModelAndView;
+
+@ControllerAdvice
+public class MyExceptionHander {
+
+    @ExceptionHandler(value = {NullPointerException.class})
+    public ModelAndView nullPointerExceptionHandler(Exception e){
+        ModelAndView view = new ModelAndView();
+        view.addObject("error",e.toString());
+        view.setViewName("error1");
+        return view;
+    }
+}
+
+```
+
+##### 7.3.2 SimpleMappingExceptionResolver处理
+
+优先级  4
+
+
+
+```java
+    /**
+    * 异常处理 异常和处理地址的映射
+    */
+	@Bean
+    public SimpleMappingExceptionResolver getSimpleMappingExceptionResolver(){
+        SimpleMappingExceptionResolver mapping = new SimpleMappingExceptionResolver();
+        Properties mappings = new Properties();
+        mappings.setProperty("java.lang.ArithmeticException","error2");
+        mappings.s
+        mapping.setExceptionMappings(mappings);
+        return mapping;
+
+    }
+```
+
+##### 7.3.3 自定义全局异常 实现 HandlerExceptionResolver
+
+优先级  3
+
+```java
+@Component
+public class MyHanderExceptionResolver implements HandlerExceptionResolver {
+    @Override
+    public ModelAndView resolveException(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) {
+        System.out.println("全局的自定义异常处理触发了。。。。");
+        ModelAndView mv = null;
+        //view.
+        if(e instanceof  NullPointerException){
+            mv = new ModelAndView();
+            mv.setViewName("error1");
+            mv.addObject("error",e.toString());
+        }
+        return mv;
+    }
+}
+```
+
+### 8. SpringBoot单元测试
+
+#### 8.1引入依赖
+
+```xml
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+```
+
+#### 8.2 @SpringBootTest注解
+
+```java
+@SpringBootTest
+class BootApplicationTests {
+    @Autowired
+    private UserService userService;
+
+    @Test
+    void contextLoads() {
+        System.out.println(userService.query());
+    }
+
+}
+```
+
+
+
+
+
