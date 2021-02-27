@@ -1176,5 +1176,387 @@ mapper
 
 ### 10 SpringBoot整合Shiro
 
+#### 10.1 建表
+
+```sql
+create table t_user(
+    id int(20) not null auto_increment,
+    username varchar(20) default null,
+    password varchar(100) default null,
+    salt varchar(100) default null,
+    create_time datetime default null,
+    state int(1) default null,
+    last_login_time datetime default null,
+    nickname varchar(30) default null,
+    realname varchar(255) default null,
+    primary key (id)
+) engine = InnoDB AUTO_INCREMENT=7 default CHARSET = utf8;
+```
+
+#### 10.2 写mapper,service
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org/DTD Mapper 3..0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jump.zhu.mapper.User2Mapper" >
+    <select id="query" resultType="User" parameterType="User">
+        select * from t_user
+        <where>
+            <if test="username != null">
+                and username = #{username}
+            </if>
+            <if test="password != null">
+                and password = #{password}
+            </if>
+        </where>
+
+    </select>
+</mapper>
+```
+
+```java
+@Repository
+@Mapper
+public interface User2Mapper {
+    public List<User> query(User user);
+}
+
+```
+
+#### 10.3 添加依赖
+
+```xml
+        <dependency>
+            <groupId>org.apache.shiro</groupId>
+            <artifactId>shiro-spring</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+```
+
+#### 10.4 认证，授权
+
+```java
+package com.jump.zhu.realm;
+
+
+import com.jump.zhu.pojo2.User;
+import com.jump.zhu.service.User2Service;
+import org.apache.shiro.authc.*;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
+import org.apache.shiro.realm.AuthorizingRealm;
+import org.apache.shiro.subject.PrincipalCollection;
+import org.apache.shiro.util.SimpleByteSource;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+
+public class AuthcRealm extends AuthorizingRealm {
+    @Autowired
+    private User2Service service;
+
+
+    /**
+     * today  认证
+     * @params No such property: code for class: Script1
+     * @return org.apache.shiro.authc.AuthenticationInfo
+     * @author jump.zhu
+     * @date   2021/2/27 16:10
+    */
+    @Override
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken) throws AuthenticationException {
+        System.out.println("11111111");
+        UsernamePasswordToken token = (UsernamePasswordToken) authenticationToken;
+        String userName = token.getUsername();
+        System.out.println("userName="+userName);
+        User user = new User();
+        user.setUsername(userName);
+        List<User> list = service.query(user);
+        if(list==null || list.size() != 1){
+            //账号不存在
+            return null;
+        }
+        user = list.get(0);
+
+        return new SimpleAuthenticationInfo(user,
+                user.getPassword(),
+                new SimpleByteSource(user.getSalt()),"authcRealm");
+    }
+
+    /**
+     * today  授权
+     * @params No such property: code for class: Script1
+     * @return org.apache.shiro.authz.AuthorizationInfo
+     * @author jump.zhu
+     * @date   2021/2/27 16:10
+     */
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
+        System.out.println("222");
+        User user = (User) principalCollection.getPrimaryPrincipal();
+        System.out.println("授权账号是："+user.getUsername());
+        SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
+        info.addRole("role");
+        return info;
+    }
+}
+```
+
+#### 10.5 配置
+
+```java
+package com.jump.zhu.config;
+
+import com.jump.zhu.realm.AuthcRealm;
+import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
+import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
+import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
+
+import java.util.HashMap;
+
+@Configuration
+public class ShiroConfig {
+    private String hashAlgorithmName = "md5";
+    private Integer hasIterations = 1024;
+/**
+ * today
+ * @params No such property: code for class: Script1
+ * @return org.apache.shiro.authc.credential.HashedCredentialsMatcher
+ * @author jump.zhu
+ * @date   2021/2/27 16:28
+*/
+    @Bean
+    public HashedCredentialsMatcher hashedCredentialsMatcher(){
+        HashedCredentialsMatcher matcher = new HashedCredentialsMatcher();
+        matcher.setHashAlgorithmName(hashAlgorithmName);
+        matcher.setHashIterations(hasIterations);
+        return matcher;
+    }
+/**
+ * today
+ * @params No such property: code for class: Script1
+ * @return
+ * @author jump.zhu
+ * @date   2021/2/27 16:27
+*/
+    @Bean
+    //@DependsOn("hashedCredentialsMatcher")
+    public AuthcRealm authcRealm(HashedCredentialsMatcher matcher){
+        AuthcRealm realm = new AuthcRealm();
+        realm.setCredentialsMatcher(matcher);
+        return realm;
+    }
+
+    /**
+     * today
+     * @params No such property: code for class: Script1
+     * @return org.apache.shiro.mgt.SecurityManager
+     * @author jump.zhu
+     * @date   2021/2/27 16:27
+    */
+    @Bean
+    //@DependsOn("authcRealm")
+    public SecurityManager securityManager(AuthcRealm realm){
+        DefaultWebSecurityManager manager = new DefaultWebSecurityManager();
+        manager.setRealm(realm);
+        return manager;
+    }
+    
+    
+    
+    
+    /**
+    *配置授权
+    */
+        @Bean
+    public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(SecurityManager manager){
+        AuthorizationAttributeSourceAdvisor advisor = new AuthorizationAttributeSourceAdvisor();
+        advisor.setSecurityManager(manager);
+        return advisor;
+    }
+    /**
+    *配置授权
+    */
+    @Bean
+    public DefaultAdvisorAutoProxyCreator defaultAdvisorAutoProxyCreator(){
+        DefaultAdvisorAutoProxyCreator proxyCreator = new DefaultAdvisorAutoProxyCreator();
+        proxyCreator.setProxyTargetClass(true);
+        return proxyCreator;
+    }
+    
+    
+    
+    
+    /**
+     * today 注册ShiroFilterFactoryBean  认证
+     * @params No such property: code for class: Script1
+     * @return org.apache.shiro.spring.web.ShiroFilterFactoryBean
+     * @author jump.zhu
+     * @date   2021/2/27 16:27
+    */
+    @Bean
+    //@DependsOn("securityManager")
+    public ShiroFilterFactoryBean shiroFilterFactoryBean(SecurityManager manager){
+        ShiroFilterFactoryBean filter =  new ShiroFilterFactoryBean();
+        filter.setSecurityManager(manager);
+        System.out.println("444");
+        filter.setLoginUrl("/login.do");
+        filter.setSuccessUrl("/success.html");
+        filter.setUnauthorizedUrl("/refuse.html");
+        //设置过滤器链
+        HashMap<String, String> map = new HashMap<>();
+        map.put("/css/*","anon");
+        map.put("/js/**","anon");
+        map.put("/img/**","anon");
+        map.put("/login","anon");
+        map.put("/login.do","authc");
+        map.put("/**","authc");
+        filter.setFilterChainDefinitionMap(map);
+        return filter;
+    }
+}
+```
+
+#### 10.6 Controller
+
+登录成功后登录其他账号时要注销
+
+```java
+package com.jump.zhu.controller;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.web.filter.authc.FormAuthenticationFilter;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import javax.servlet.http.HttpServletRequest;
+
+@Controller
+public class AuthcController {
+
+    @RequestMapping("/login.do")
+    public String login(HttpServletRequest req){
+        Object obj = req.getAttribute(FormAuthenticationFilter.DEFAULT_ERROR_KEY_ATTRIBUTE_NAME);
+        System.out.println("认证失败信息"+obj);
+        return "login";
+    }
+
+    @RequestMapping("/logout.do")
+    public String logout(){
+        SecurityUtils.getSubject().logout();
+        return "login";
+    }
+}
+```
+
+认证失败跳转
+
+```java
+
+    @Bean
+    public SimpleMappingExceptionResolver getSimpleMappingExceptionResolver(){
+        SimpleMappingExceptionResolver mapping = new SimpleMappingExceptionResolver();
+        Properties mappings = new Properties();
+        //java.lang.ArithmeticException
+        System.out.println("SimpleMappingExceptionResolver");
+        mappings.setProperty("AuthorizationException","refuse");
+        mapping.setExceptionMappings(mappings);
+        return mapping;
+    }
+```
+
+#### 10.7 HTML页面
+
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>登录页面</title>
+</head>
+<body>
+<h1>登陆</h1>
+<form th:action="@{/login.do}" method="post">
+    <label>账号:</label><input type="text" name="username"><br>
+    <label>密码:</label><input type="password" name="password"><br>
+    <input type="submit" value="提交">
+</form>
+</body>
+</html>
+```
+
+ ```html
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>没有访问权限</title>
+</head>
+<body>
+<h1>没有访问权限....</h1>
+</body>
+</html>
+ ```
+
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>登陆成功</title>
+</head>
+<body>
+    <h1>登陆成功....</h1>
+</body>
+</html>
+```
+
+#### 10.8 shiro标签
+
+##### 10.8.1 引入依赖
+
+```xml
+        <dependency>
+            <groupId>com.github.theborakompanioni</groupId>
+            <artifactId>thymeleaf-extras-shiro</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+```
+
+##### 10.8.2 注册ShiroDialect对象
+
+```java
+    @Bean
+    public ShiroDialect shiroDialect(){
+        return new ShiroDialect();
+    }
+```
+
+##### 10.8.3 引入头部标签
+
+```html
+      xmlns:shiro="http://www.pollix.at/thymeleaf/shiro"
+```
+
+##### 10.8.4 使用shiro标签
+
+```html
+<shiro:authenticated>已登录</shiro:authenticated>
+<span shiro:hasRole="role">权限role</span>
+<span shiro:hasRole="role1">权限role1</span>
+<shiro:guest>游客</shiro:guest>
+```
+
+### 11. SpringBoot整合SpringSecurity
+
+
+
 
 

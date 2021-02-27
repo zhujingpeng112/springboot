@@ -1,5 +1,6 @@
 package com.jump.zhu;
 
+import at.pollux.thymeleaf.shiro.dialect.ShiroDialect;
 import com.jump.zhu.filter.SecondFilter;
 import com.jump.zhu.servlet.SecondServlet;
 import lombok.val;
@@ -40,18 +41,20 @@ public class BootApplication {
         return filterRegistrationBean;
     }
 
-    //@Bean
+    @Bean
     public SimpleMappingExceptionResolver getSimpleMappingExceptionResolver(){
         SimpleMappingExceptionResolver mapping = new SimpleMappingExceptionResolver();
         Properties mappings = new Properties();
         //java.lang.ArithmeticException
         System.out.println("SimpleMappingExceptionResolver");
         mappings.setProperty("java.lang.NullPointerException","error2");
+        mappings.setProperty("AuthorizationException","refuse");
         mapping.setExceptionMappings(mappings);
         return mapping;
-
     }
-
-
+    @Bean
+    public ShiroDialect shiroDialect(){
+        return new ShiroDialect();
+    }
 
 }
