@@ -1,7 +1,7 @@
 package com.jump.zhu.controller;
 
 import com.jump.zhu.bean.User;
-import lombok.val;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,7 +10,8 @@ import org.springframework.web.servlet.ModelAndView;
 
 import java.util.ArrayList;
 
-@RestController
+@Controller
+//@Controller
 public class ShowController {
     String a;
     @RequestMapping("/showUser")

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>用户信息</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+<h1>用户管理</h1>
+<table border="1" align="center" width="50%">
+    <tr>
+        <th>ID</th>
+        <th>名字</th>
+        <th>年龄</th>
+        <th></th>
+    </tr>
+    <!--/*@thymesVar id="list" type="java.util.List"*/-->
+    <tr th:each="user:${list}">
+        <!--/*@thymesVar id="id" type="java.lang.String"*/-->
+        <th th:text="${user.id}"></th>
+        <!--/*@thymesVar id="userName" type="java.lang.String"*/-->
+        <th th:text="${user.name}"></th>
+        <!--/*@thymesVar id="age" type="java.lang.String"*/-->
+        <th th:text="${user.age}"></th>
+        <th><a th:href="@{/user/updateInfo(id=${user.id})}">修改</a>
+        </th>
+        <th><a th:href="@{/user/delete(id=${user.id})}">删除</a>
+        </th>
+    </tr>
+</table>
+
+</body>
+
+</html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>用户信息</title>
+</head>
+<body>
+<h1>添加用户</h1>
+<form th:action="@{/user/add}" method="post">
+<table border="1" align="center" width="50%">
+    <tr>
+        <th>ID</th>
+        <th>名字</th>
+        <th>年龄</th>
+
+    </tr>
+    <!--/*@thymesVar id="list" type="java.util.List"*/-->
+    <tr >
+        <th></th>
+        <th><input type="text" name="name"></th>
+        <th><input type="text" name="age"></th>
+    </tr>
+</table>
+    <input type="submit" value="提交">
+</form>
+</body>
+</html>

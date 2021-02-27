@@ -519,6 +519,8 @@ public class FileController {
 
 ### 5.SpringBoot整合前端模板框架
 
+**使用String返回视图时，只能使用@Controller不能使用@RestController**
+
 #### 1.整合freemarker
 
 ##### 1.添加依赖
@@ -594,7 +596,7 @@ public class User {
 
 ```
 
-##### 4.模板页面 user.fftl
+##### 4.模板页面 user.ftl
 
 ``` html
 <html>
@@ -827,6 +829,352 @@ class BootApplicationTests {
 ```
 
 
+
+### 9. SpringBoot整合MyBatists
+
+#### 9.1 基础
+
+##### 9.1.1  引入pom依赖
+
+```xml
+        <!--mysql -->
+		<dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+        <!-- 连接池-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.19</version>
+        </dependency>
+        <!-- mybatis -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+
+```
+
+##### 9.1.2 修改配置文件
+
+```properties
+#数据库配置
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:mysql://192.168.32.209:3306
+spring.datasource.username=mybatis
+spring.datasource.password=mybatis
+#连接池
+spring.datasource.type=com.alibaba.druid.pool.DruidDataSource
+#mabatis的别名
+mybatis.type-aliases-package=com.jump.zhu.pojo
+#mybatis的映射文件
+mybatis.mapper-locations=classpath:mapper/*.xml
+
+```
+
+##### 9.1.3 建表，创建pojo
+
+```sql
+create table users(
+    id int(11) not null AUTO_INCREMENT,
+    name varchar(255) default null,
+    age int(11) default null,primary key (id)
+) engine=InnoDB default CHARSET = utf8;
+
+insert into users values(null,'ruru',18);
+```
+
+```java
+@Data
+public class User {
+
+    private Integer id;
+    private String name;
+    private Integer age;
+
+}
+```
+
+
+
+##### 9.1.4 建mapper数据库映射文件
+
+@Mapper
+
+@Repository
+
+@MapperScan("com.jump.zhu.mapper")
+
+```java
+//防止引入报错
+@Repository
+//使mapper加载到boot容器中   或者在 boot中加入@MapperScan("com.jump.zhu.mapper")
+@Mapper
+public interface UserMapper {
+    public List<User> query();
+}
+
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org/DTD Mapper 3..0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jump.zhu.mapper.UserMapper" >
+    <select id="query" resultType="User">
+        select * from users
+    </select>
+</mapper>
+```
+
+
+
+##### 9.1.5 建service controller
+
+```java
+public interface UserService {
+    List<User> query();
+}
+```
+
+```java
+@Service
+public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private UserMapper mapper;
+
+    @Override
+    public List<User> query() {
+        return mapper.query();
+    }
+}
+```
+
+```java
+@RestController
+public class UserController {
+    @Autowired
+    private UserService userService;
+
+    @RequestMapping("/user/query")
+    public List<User> query(){
+        return userService.query();
+    }
+}
+```
+
+#### 9.2 查询
+
+##### 9.2.1  建controller，mapper，service 见9.1
+
+```java
+    @RequestMapping("/user/query1")
+    public String query1(Model model){
+        model.addAttribute("list",userService.query());
+        return "user1";
+    }
+```
+
+
+
+##### 9.2.2  建html 参考 5.2
+
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>用户信息</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+<h1>用户管理</h1>
+<table border="1" align="center" width="50%">
+    <tr>
+        <th>ID</th>
+        <th>名字</th>
+        <th>年龄</th>
+    </tr>
+    <!--/*@thymesVar id="list" type="java.util.List"*/-->
+    <tr th:each="user:${list}">
+        <!--/*@thymesVar id="id" type="java.lang.String"*/-->
+        <th th:text="${user.id}"></th>
+        <!--/*@thymesVar id="userName" type="java.lang.String"*/-->
+        <th th:text="${user.name}"></th>
+        <!--/*@thymesVar id="age" type="java.lang.String"*/-->
+        <th th:text="${user.age}"></th>
+    </tr>
+</table>
+</body>
+</html>
+```
+
+#### 9.3 新增
+
+##### 9.3.1  建controller，mapper，service 见9.1
+
+service 省略
+
+mapper
+
+```xml
+    <insert id="addUser" parameterType="User">
+        INSERT INTO users(name,age) values (#{name},#{age})
+    </insert>
+```
+
+```java
+@Repository
+@Mapper
+public interface UserMapper {
+    public List<User> query();
+    public Integer addUser(User user);
+}
+
+```
+
+controller
+
+```java
+    @RequestMapping("/user/add")
+    public String add(User user){
+        userService.addUser(user);
+        return "redirect:/user/query1";
+    }
+
+    @RequestMapping("/user/{page}")
+    public String toAdd(@PathVariable String page){
+        return page;
+    }
+```
+
+##### 9.3.2  建html 参考 5.2
+
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>用户信息</title>
+</head>
+<body>
+<h1>添加用户</h1>
+<form th:action="@{/user/add}" method="post">
+<table border="1" align="center" width="50%">
+    <tr>
+        <th>ID</th>
+        <th>名字</th>
+        <th>年龄</th>
+    </tr>
+    <!--/*@thymesVar id="list" type="java.util.List"*/-->
+    <tr >
+        <th></th>
+        <th><input type="text" name="name"></th>
+        <th><input type="text" name="age"></th>
+    </tr>
+</table>
+    <input type="submit" value="提交">
+</form>
+</body>
+</html>
+```
+
+#### 9.4 修改
+
+##### 9.4.1 建controller，mapper，service 见9.1
+
+controller
+
+```java
+    @RequestMapping("/user/updateInfo")
+    public String updateInfo(Integer id,Model model){
+        model.addAttribute("user",userService.queryById(id));
+        return "updateUser";
+    }
+
+    @RequestMapping("/user/update")
+    public String update(User user){
+        userService.updateUser(user);
+        return "redirect:/user/query1";
+    }
+```
+
+service 省略
+
+mapper
+
+```xml
+    <select id="queryById" resultType="User">
+        select * from users where id = #{id};
+    </select>
+
+    <update id="update" parameterType="User">
+        update users set name = #{name},age=#{age} where id = #{id}
+    </update>
+```
+
+
+
+##### 9.4.2 HTML
+
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <title>用户信息</title>
+    </head>
+<body>
+<h1>添加用户</h1>
+<form th:action="@{/user/update}" method="post">
+    <table border="1" align="center" width="50%">
+        <tr>
+            <th>ID</th>
+            <th>名字</th>
+            <th>年龄</th>
+        </tr>
+        <!--/*@thymesVar id="list" type="java.util.List"*/-->
+        <tr >
+            <input type="hidden" name="id" th:value="${user.id}">
+            <th th:text="${user.id}"></th>
+            <th><input type="text" name="name" th:value="${user.name}"></th>
+            <th><input type="text" name="age" th:value="${user.age}"></th>
+        </tr>
+    </table>
+    <input type="submit" value="提交">
+</form>
+</body>
+</html>
+```
+
+#### 9.5 删除
+
+##### 9.5.1 建controller，mapper，service 见9.1
+
+controller
+
+```java
+    @RequestMapping("/user/delete")
+    public String delete(Integer id){
+        userService.deleteUser(id);
+        return "redirect:/user/query1";
+    }
+```
+
+service 省略
+
+mapper
+
+```xml
+    <delete id="deleteUser" parameterType="Integer">
+        delete from users where id = #{id}
+    </delete>
+```
+
+### 10 SpringBoot整合Shiro
 
 
 

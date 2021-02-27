@@ -3,6 +3,8 @@ package com.jump.zhu;
 import com.jump.zhu.filter.SecondFilter;
 import com.jump.zhu.servlet.SecondServlet;
 import lombok.val;
+import org.apache.ibatis.type.MappedJdbcTypes;
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,6 +19,7 @@ import java.util.Properties;
 
 @SpringBootApplication
 @ServletComponentScan
+//@MapperScan("com.jump.zhu.mapper")
 public class BootApplication {
     public static void main(String[] args) {
         //ApplicationContext run = SpringApplication.run(BootApplication.class, args);
@@ -37,7 +40,7 @@ public class BootApplication {
         return filterRegistrationBean;
     }
 
-    @Bean
+    //@Bean
     public SimpleMappingExceptionResolver getSimpleMappingExceptionResolver(){
         SimpleMappingExceptionResolver mapping = new SimpleMappingExceptionResolver();
         Properties mappings = new Properties();

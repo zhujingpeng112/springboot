@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author jump.zhu
  * @date   2021/1/19 22:18
 */
-@RestController
+//@RestController
 @Data
 public class UserController {
     @Value("${user.name}")
